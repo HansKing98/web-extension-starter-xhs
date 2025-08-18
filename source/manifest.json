@@ -1,7 +1,7 @@
 {
   "__chrome__manifest_version": 3,
   "__firefox__manifest_version": 2,
-  "name": "Sample WebExtension",
+  "name": "Loomi Hub",
   "version": "0.0.0",
 
   "icons": {
@@ -10,13 +10,15 @@
     "48": "assets/icons/favicon-48.png",
     "128": "assets/icons/favicon-128.png"
   },
-  "description": "Sample description",
-  "homepage_url": "https://github.com/abhijithvijayan/web-extension-starter",
-  "short_name": "Sample Name",
+  "description": "Loomi Hub - 智能浏览器扩展",
+  "homepage_url": "https://loomi.live",
+  "short_name": "Loomi Hub",
 
   "__chrome__permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "clipboardWrite",
+    "scripting"
   ],
 
   "__chrome__optional_permissions": [],
@@ -31,6 +33,7 @@
   "__firefox__permissions": [
     "activeTab",
     "storage",
+    "clipboardWrite",
     "http://*/*",
     "https://*/*"
   ],
@@ -58,7 +61,7 @@
       "48": "assets/icons/favicon-48.png",
       "128": "assets/icons/favicon-128.png"
     },
-    "default_title": "tiny title"
+    "default_title": "Loomi Hub"
   },
 
   "__firefox__browser_action": {
@@ -69,7 +72,7 @@
       "48": "assets/icons/favicon-48.png",
       "128": "assets/icons/favicon-128.png"
     },
-    "default_title": "tiny title",
+    "default_title": "Loomi Hub",
     "browser_style": false
   },
 

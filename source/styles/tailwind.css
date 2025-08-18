@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .btn-gradient {
+    @apply relative overflow-hidden bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 text-white font-bold py-3 px-6 rounded-lg transform transition-all duration-300 shadow-lg;
+  }
+  
+  .btn-gradient:hover {
+    @apply from-pink-600 via-red-600 to-yellow-600 -translate-y-1 scale-105 shadow-xl;
+  }
+  
+  .btn-gradient::before {
+    content: '';
+    @apply absolute top-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-all duration-500;
+    left: -100%;
+  }
+  
+  .btn-gradient:hover::before {
+    left: 100%;
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent font-black;
+    background-size: 300% 300%;
+    animation: gradient 3s ease-in-out infinite;
+  }
+
+  .text-gradient-orange {
+    @apply bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 bg-clip-text text-transparent font-extrabold uppercase tracking-wide;
+  }
+
+  .popup-container {
+    @apply bg-white rounded-md shadow-2xl relative overflow-hidden;
+    min-width: 320px;
+    max-width: 400px;
+    padding: 1.5rem;
+  }
+
+  .popup-container::before {
+    content: '';
+    @apply absolute inset-0 pointer-events-none;
+    background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  }
+
+  .glass-panel {
+    @apply rounded-2xl p-5 shadow-xl border relative;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(16px);
+    border-color: rgba(255, 255, 255, 0.2);
+    z-index: 10;
+  }
+
+  .btn-secondary {
+    @apply rounded-xl px-4 py-3 font-bold uppercase tracking-wide text-sm transition-all duration-300 shadow-lg border;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(4px);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .btn-secondary:hover {
+    @apply bg-white -translate-y-1 scale-105 shadow-xl;
+  }
+
+  .btn-link {
+    @apply rounded-xl px-4 py-3 font-bold transition-all duration-300 shadow-lg border text-blue-800;
+    background: rgba(219, 234, 254, 0.9);
+    backdrop-filter: blur(4px);
+    border-color: rgba(147, 197, 253, 0.5);
+  }
+
+  .btn-link:hover {
+    @apply bg-blue-200 -translate-y-1 scale-105 shadow-xl;
+  }
+
+  .message-success {
+    @apply bg-green-100 text-green-800 border border-green-200 rounded-lg p-3 text-center text-sm font-medium;
+  }
+
+  .message-error {
+    @apply bg-red-100 text-red-800 border border-red-200 rounded-lg p-3 text-center text-sm font-medium;
+  }
+
+  .non-xiaohongshu-message {
+    @apply rounded-xl p-4 text-center text-gray-600 border font-medium;
+    background: rgba(243, 244, 246, 0.9);
+    backdrop-filter: blur(4px);
+    border-color: rgba(229, 231, 235, 0.5);
+  }
+
+  @keyframes gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+}

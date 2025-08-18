@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 
 import Popup from './Popup';
 
+import '../styles/tailwind.css';
 import './styles.scss';
 
 const container = document.getElementById('popup-root');
