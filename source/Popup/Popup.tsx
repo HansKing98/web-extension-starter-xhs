@@ -13,6 +13,8 @@ const Popup: React.FC = () => {
   const [isCopyingHtml, setIsCopyingHtml] = React.useState<boolean>(false);
   const [isCopyingText, setIsCopyingText] = React.useState<boolean>(false);
   const [apiStatus, setApiStatus] = React.useState<string>("");
+  const [debugInfo, setDebugInfo] = React.useState<any>(null);
+  const [showDebug, setShowDebug] = React.useState<boolean>(false);
 
   React.useEffect(() => {
     // 获取当前标签页信息并检查权限
@@ -254,29 +256,26 @@ const Popup: React.FC = () => {
 
   // 使用 Content Script 作为降级方案
   const executeWithContentScript = async (action: string, data?: any) => {
-    return new Promise((resolve, reject) => {
-      (browser as any).tabs
-        .query({ active: true, currentWindow: true })
-        .then((tabs: any) => {
-          if (tabs[0]?.id) {
-            (browser as any).tabs.sendMessage(
-              tabs[0].id,
-              { action, ...data },
-              (response: any) => {
-                if ((browser as any).runtime.lastError) {
-                  reject(new Error((browser as any).runtime.lastError.message));
-                } else if (response && response.success) {
-                  resolve(response);
-                } else {
-                  reject(new Error(response?.error || "内容脚本执行失败"));
-                }
-              }
-            );
-          } else {
-            reject(new Error("无法获取当前标签页"));
-          }
-        });
-    });
+    try {
+      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+      
+      if (!tabs[0]?.id) {
+        throw new Error("无法获取当前标签页");
+      }
+
+      const response = await browser.tabs.sendMessage(tabs[0].id, { action, ...data });
+      
+      if (response && (response as any).success) {
+        return response;
+      } else {
+        throw new Error((response as any)?.error || "内容脚本执行失败");
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("Could not establish connection")) {
+        throw new Error("无法连接到内容脚本，请刷新页面后重试");
+      }
+      throw error;
+    }
   };
 
   const copyCurrentHtml = async () => {
@@ -497,6 +496,137 @@ ${text}`;
     }
   };
 
+  // 检查内容脚本连接状态
+  const checkContentScriptConnection = async () => {
+    try {
+      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+      if (!tabs[0]?.id) {
+        return { connected: false, error: "无法获取当前标签页" };
+      }
+
+      // 发送一个简单的 ping 消息
+      try {
+        await browser.tabs.sendMessage(tabs[0].id, { action: "ping" });
+        return { connected: true };
+      } catch (error) {
+        return { 
+          connected: false, 
+          error: error instanceof Error ? error.message : "连接失败",
+          tabId: tabs[0].id,
+          url: tabs[0].url
+        };
+      }
+    } catch (error) {
+      return { 
+        connected: false, 
+        error: error instanceof Error ? error.message : "检查连接失败" 
+      };
+    }
+  };
+
+  // 获取调试信息
+  const getDebugInfo = async () => {
+    try {
+      // 首先检查连接状态
+      const connectionStatus = await checkContentScriptConnection();
+      
+      if (!connectionStatus.connected) {
+        console.error("内容脚本连接失败:", connectionStatus);
+        
+        let errorMsg = "❌ 无法连接到内容脚本";
+        if (connectionStatus.error?.includes("Could not establish connection")) {
+          errorMsg += "\n📝 请尝试：\n1. 刷新页面\n2. 重新加载扩展\n3. 确认在小红书页面上";
+        } else if (connectionStatus.error?.includes("chrome://") || connectionStatus.error?.includes("extension://")) {
+          errorMsg += "\n📝 无法在系统页面上运行";
+        } else {
+          errorMsg += `\n🔍 错误详情: ${connectionStatus.error}`;
+        }
+        
+        showMessage(errorMsg);
+        return;
+      }
+
+      let result;
+      try {
+        result = await executeWithContentScript("getDebugInfo");
+      } catch (scriptError) {
+        console.error("content script 获取调试信息失败:", scriptError);
+        showMessage(`❌ 获取调试信息失败: ${scriptError instanceof Error ? scriptError.message : '未知错误'}`);
+        return;
+      }
+
+      if (result && (result as any).success) {
+        setDebugInfo((result as any).data);
+        setShowDebug(true);
+        showMessage("✅ 调试信息已获取");
+      } else {
+        throw new Error((result as any)?.error || "获取调试信息失败");
+      }
+    } catch (err) {
+      console.error("获取调试信息失败:", err);
+      const errorMessage = err instanceof Error ? err.message : "未知错误";
+      showMessage("❌ 获取调试信息失败: " + errorMessage);
+    }
+  };
+
+  // 重新注入内容脚本
+  const reinjectContentScript = async () => {
+    try {
+      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+      if (!tabs[0]?.id) {
+        showMessage("❌ 无法获取当前标签页");
+        return;
+      }
+
+      // 使用 scripting API 重新注入内容脚本
+      await (browser as any).scripting.executeScript({
+        target: { tabId: tabs[0].id },
+        files: ['assets/js/contentScript.bundle.js']
+      });
+
+      showMessage("✅ 内容脚本已重新注入，请稍等片刻再试");
+    } catch (error) {
+      console.error("重新注入失败:", error);
+      showMessage(`❌ 重新注入失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    }
+  };
+
+  // 手动触发按钮扫描
+  const triggerButtonScan = async () => {
+    try {
+      // 首先检查连接
+      const connectionStatus = await checkContentScriptConnection();
+      if (!connectionStatus.connected) {
+        showMessage("❌ 内容脚本未连接，请先检查连接状态");
+        return;
+      }
+
+      let result;
+      try {
+        result = await executeWithContentScript("triggerButtonScan");
+      } catch (scriptError) {
+        console.log("content script 触发扫描失败:", scriptError);
+        showMessage("❌ 无法触发按钮扫描");
+        return;
+      }
+
+      if (result && (result as any).success) {
+        const data = (result as any).data;
+        showMessage(`✅ ${data.message} - 找到 ${data.followButtonsCount} 个关注按钮，已添加 ${data.loomiButtonsCount} 个Loomi按钮`);
+        // 刷新调试信息
+        if (showDebug) {
+          setTimeout(getDebugInfo, 500);
+        }
+      } else {
+        throw new Error((result as any)?.error || "触发扫描失败");
+      }
+    } catch (err) {
+      console.error("触发按钮扫描失败:", err);
+      const errorMessage = err instanceof Error ? err.message : "未知错误";
+      showMessage("❌ 触发扫描失败: " + errorMessage);
+    }
+  };
+
   return (
     <section className="popup-container">
       <h2 className="text-gradient text-3xl mb-6 text-center">
@@ -606,6 +736,75 @@ ${text}`;
             >
               📸 截图并复制到剪贴板
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 调试信息面板 */}
+      {showDebug && debugInfo && (
+        <div className="glass-panel mb-5">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-gradient-orange text-lg">调试信息</h3>
+            <button
+              type="button"
+              onClick={() => setShowDebug(false)}
+              className="text-red-500 hover:text-red-700"
+            >
+              ❌
+            </button>
+          </div>
+          <div className="space-y-2 text-sm">
+            <div>🎯 关注按钮: {debugInfo.followButtonsCount}</div>
+            <div>🚀 Loomi按钮: {debugInfo.loomiButtonsCount}</div>
+            <div>📊 总按钮数: {debugInfo.totalButtonsCount}</div>
+            <div>🔍 可能的关注按钮: {debugInfo.potentialFollowButtons}</div>
+            <div>⏰ 更新时间: {new Date(debugInfo.timestamp).toLocaleTimeString()}</div>
+            
+            {debugInfo.followButtonsInfo.length > 0 && (
+              <div className="mt-3">
+                <h4 className="font-bold text-sm mb-2">找到的关注按钮:</h4>
+                <div className="max-h-32 overflow-y-auto text-xs space-y-1">
+                  {debugInfo.followButtonsInfo.map((btn: any, index: number) => (
+                    <div key={index} className="p-2 bg-gray-100 rounded text-black">
+                      <div>类名: {btn.className}</div>
+                      <div>文本: {btn.text || '无'}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {debugInfo.potentialFollowButtonsInfo.length > 0 && (
+              <div className="mt-3">
+                <h4 className="font-bold text-sm mb-2">可能的关注按钮:</h4>
+                <div className="max-h-32 overflow-y-auto text-xs space-y-1">
+                  {debugInfo.potentialFollowButtonsInfo.map((btn: any, index: number) => (
+                    <div key={index} className="p-2 bg-blue-100 rounded text-black">
+                      <div>类名: {btn.className}</div>
+                      <div>文本: {btn.text || '无'}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            <div className="mt-3 space-y-2">
+              <button
+                type="button"
+                onClick={getDebugInfo}
+                className="btn-gradient w-full text-xs py-1"
+              >
+                🔄 刷新调试信息
+              </button>
+              <button
+                type="button"
+                onClick={triggerButtonScan}
+                className="btn-gradient w-full text-xs py-1"
+                style={{ background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)' }}
+              >
+                🔍 重新扫描按钮
+              </button>
+            </div>
           </div>
         </div>
       )}
