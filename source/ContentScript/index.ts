@@ -230,6 +230,7 @@ function processFollowButtons() {
 
 // 创建调试面板
 function createDebugPanel() {
+  return false
   if (document.getElementById('loomi-debug-panel')) {
     return; // 已经存在
   }
@@ -341,7 +342,7 @@ function initLoomiButtons() {
   injectStyles();
 
   // 创建调试面板
-  // createDebugPanel();
+  createDebugPanel();
 
   // 处理已存在的按钮
   processFollowButtons();

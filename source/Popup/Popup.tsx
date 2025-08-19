@@ -569,28 +569,6 @@ ${text}`;
     }
   };
 
-  // 重新注入内容脚本
-  const reinjectContentScript = async () => {
-    try {
-      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-      if (!tabs[0]?.id) {
-        showMessage("❌ 无法获取当前标签页");
-        return;
-      }
-
-      // 使用 scripting API 重新注入内容脚本
-      await (browser as any).scripting.executeScript({
-        target: { tabId: tabs[0].id },
-        files: ['assets/js/contentScript.bundle.js']
-      });
-
-      showMessage("✅ 内容脚本已重新注入，请稍等片刻再试");
-    } catch (error) {
-      console.error("重新注入失败:", error);
-      showMessage(`❌ 重新注入失败: ${error instanceof Error ? error.message : '未知错误'}`);
-    }
-  };
-
   // 手动触发按钮扫描
   const triggerButtonScan = async () => {
     try {
@@ -631,7 +609,9 @@ ${text}`;
     <section className="popup-container">
       <h2 className="text-gradient text-3xl mb-6 text-center">
         Loomi Hub
-        {/* {JSON.stringify(manifest.version)} */}
+        <span className="hidden text-xs text-gray-500">
+          {JSON.stringify(manifest.version)}
+        </span>
       </h2>
 
       {message && (
@@ -758,36 +738,48 @@ ${text}`;
             <div>🚀 Loomi按钮: {debugInfo.loomiButtonsCount}</div>
             <div>📊 总按钮数: {debugInfo.totalButtonsCount}</div>
             <div>🔍 可能的关注按钮: {debugInfo.potentialFollowButtons}</div>
-            <div>⏰ 更新时间: {new Date(debugInfo.timestamp).toLocaleTimeString()}</div>
-            
+            <div>
+              ⏰ 更新时间: {new Date(debugInfo.timestamp).toLocaleTimeString()}
+            </div>
+
             {debugInfo.followButtonsInfo.length > 0 && (
               <div className="mt-3">
                 <h4 className="font-bold text-sm mb-2">找到的关注按钮:</h4>
                 <div className="max-h-32 overflow-y-auto text-xs space-y-1">
-                  {debugInfo.followButtonsInfo.map((btn: any, index: number) => (
-                    <div key={index} className="p-2 bg-gray-100 rounded text-black">
-                      <div>类名: {btn.className}</div>
-                      <div>文本: {btn.text || '无'}</div>
-                    </div>
-                  ))}
+                  {debugInfo.followButtonsInfo.map(
+                    (btn: any, index: number) => (
+                      <div
+                        key={index}
+                        className="p-2 bg-gray-100 rounded text-black"
+                      >
+                        <div>类名: {btn.className}</div>
+                        <div>文本: {btn.text || "无"}</div>
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
             )}
-            
+
             {debugInfo.potentialFollowButtonsInfo.length > 0 && (
               <div className="mt-3">
                 <h4 className="font-bold text-sm mb-2">可能的关注按钮:</h4>
                 <div className="max-h-32 overflow-y-auto text-xs space-y-1">
-                  {debugInfo.potentialFollowButtonsInfo.map((btn: any, index: number) => (
-                    <div key={index} className="p-2 bg-blue-100 rounded text-black">
-                      <div>类名: {btn.className}</div>
-                      <div>文本: {btn.text || '无'}</div>
-                    </div>
-                  ))}
+                  {debugInfo.potentialFollowButtonsInfo.map(
+                    (btn: any, index: number) => (
+                      <div
+                        key={index}
+                        className="p-2 bg-blue-100 rounded text-black"
+                      >
+                        <div>类名: {btn.className}</div>
+                        <div>文本: {btn.text || "无"}</div>
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
             )}
-            
+
             <div className="mt-3 space-y-2">
               <button
                 type="button"
@@ -800,7 +792,10 @@ ${text}`;
                 type="button"
                 onClick={triggerButtonScan}
                 className="btn-gradient w-full text-xs py-1"
-                style={{ background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)' }}
+                style={{
+                  background:
+                    "linear-gradient(135deg, #28a745 0%, #20c997 100%)",
+                }}
               >
                 🔍 重新扫描按钮
               </button>
