@@ -2,7 +2,7 @@
   "__chrome__manifest_version": 3,
   "__firefox__manifest_version": 2,
   "name": "Loomi Hub",
-  "version": "0.0.0",
+  "version": "3.0.1",
 
   "icons": {
     "16": "assets/icons/favicon-16.png",
@@ -23,17 +23,18 @@
 
   "__chrome__optional_permissions": [],
 
-  "__chrome__host_permissions": [],
-
-  "__chrome__optional_host_permissions": [
+  "__chrome__host_permissions": [
     "http://*/*",
     "https://*/*"
   ],
+
+  "__chrome__optional_host_permissions": [],
 
   "__firefox__permissions": [
     "activeTab",
     "storage",
     "clipboardWrite",
+    "scripting",
     "http://*/*",
     "https://*/*"
   ],
